@@ -39,7 +39,7 @@ public class Employee {
     @Column(unique = true)
     private String email;
 
-    @Column(name = "mobile_number")
+    @Column(name = "mobile_number", unique = true)
     private String mobileNumber;
 
     @Column(name = "emergency_contact")

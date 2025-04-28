@@ -21,7 +21,7 @@ public record DepartmentResponse(
                 description = "Type of department", example = "TECHNICAL",
                 allowableValues = {"TECHNICAL", "HR", "FINANCE", "MARKETING", "OPERATIONS", "CUSTOMER_SUPPORT"}
         )
-        String departmentType,
+        Department.DepartmentType departmentType,
 
         @Schema(description = "Key projects/responsibilities", example = "Product development")
         String responsibilities

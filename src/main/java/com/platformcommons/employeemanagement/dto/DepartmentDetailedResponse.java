@@ -38,7 +38,7 @@ public record DepartmentDetailedResponse(
                 allowableValues = {"TECHNICAL", "HR", "FINANCE", "OPERATIONS"},
                 requiredMode = Schema.RequiredMode.REQUIRED
         )
-        String departmentType,
+        Department.DepartmentType departmentType,
 
         @Schema(
                 description = "Key responsibilities and projects of the department",
