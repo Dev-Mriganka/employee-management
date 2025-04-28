@@ -61,7 +61,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
-                        // Updated paths for Swagger UI and OpenAPI
                         .requestMatchers("/v3/api-docs/**", "/api-docs/**", "/swagger-ui/**",
                                 "/swagger-ui.html", "/swagger-config/**", "/swagger-resources/**").permitAll()
                         .anyRequest().authenticated()
