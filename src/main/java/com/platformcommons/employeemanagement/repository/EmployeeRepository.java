@@ -23,4 +23,8 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     List<Employee> findByDepartmentId(@Param("departmentId") Long departmentId);
 
     Optional<Employee> findByEmployeeCodeAndDateOfBirth(String employeeCode, LocalDate dateOfBirth);
+
+    boolean existsByEmail(String email);
+
+    boolean existsByMobileNumber(String mobileNumber);
 }

@@ -67,6 +67,16 @@ public class EmployeeService {
             throw new IllegalArgumentException("Employee code already exists: " + employeeRequest.employeeCode());
         }
 
+        if (employeeRequest.email() != null && !employeeRequest.email().isEmpty() &&
+                employeeRepository.existsByEmail(employeeRequest.email())) {
+            throw new IllegalArgumentException("Email already exists: " + employeeRequest.email());
+        }
+
+        if (employeeRequest.mobileNumber() != null && !employeeRequest.mobileNumber().isEmpty() &&
+                employeeRepository.existsByMobileNumber(employeeRequest.mobileNumber())) {
+            throw new IllegalArgumentException("Mobile number already exists: " + employeeRequest.mobileNumber());
+        }
+
         Employee employee = employeeMapper.toEntity(employeeRequest);
 
         // Handle addresses
@@ -85,6 +95,18 @@ public class EmployeeService {
     @Transactional
     public EmployeeResponse updateEmployee(Long id, EmployeeUpdateRequest updateRequest) {
         Employee employee = getEmployeeOrThrow(id);
+
+        if (updateRequest.email() != null && !updateRequest.email().isEmpty() &&
+                !updateRequest.email().equals(employee.getEmail()) &&
+                employeeRepository.existsByEmail(updateRequest.email())) {
+            throw new IllegalArgumentException("Email already exists: " + updateRequest.email());
+        }
+
+        if (updateRequest.mobileNumber() != null && !updateRequest.mobileNumber().isEmpty() &&
+                !updateRequest.mobileNumber().equals(employee.getMobileNumber()) &&
+                employeeRepository.existsByMobileNumber(updateRequest.mobileNumber())) {
+            throw new IllegalArgumentException("Mobile number already exists: " + updateRequest.mobileNumber());
+        }
 
         employeeMapper.updateFromRequest(updateRequest, employee);
         return employeeMapper.toResponse(employeeRepository.save(employee));
