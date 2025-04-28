@@ -24,4 +24,7 @@ public class Role {
         ROLE_ADMIN,
         ROLE_EMPLOYEE
     }
+    public Role(ERole name) {
+        this.name = name;
+    }
 }

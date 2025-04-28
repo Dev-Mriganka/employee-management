@@ -1,6 +1,8 @@
 package com.platformcommons.employeemanagement.service;
 
-import com.platformcommons.employeemanagement.dto.DepartmentDto;
+import com.platformcommons.employeemanagement.dto.DepartmentDetailedResponse;
+import com.platformcommons.employeemanagement.dto.DepartmentRequest;
+import com.platformcommons.employeemanagement.dto.DepartmentResponse;
 import com.platformcommons.employeemanagement.entity.Department;
 import com.platformcommons.employeemanagement.exception.ResourceNotFoundException;
 import com.platformcommons.employeemanagement.mapper.DepartmentMapper;
@@ -19,52 +21,50 @@ public class DepartmentService {
     private final DepartmentRepository departmentRepository;
     private final DepartmentMapper departmentMapper;
 
-    public List<DepartmentDto.Response> getAllDepartments() {
+    public List<DepartmentResponse> getAllDepartments() {
         return departmentRepository.findAll().stream()
-                .map(departmentMapper::toDto)
+                .map(departmentMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-    public DepartmentDto.Response getDepartmentById(Long id) {
+    public DepartmentResponse getDepartmentById(Long id) {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + id));
-        return departmentMapper.toDto(department);
+        return departmentMapper.toResponse(department);
     }
 
-    public DepartmentDto.DetailedResponse getDepartmentWithEmployees(Long id) {
+    public DepartmentDetailedResponse getDepartmentWithEmployees(Long id) {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + id));
-        return departmentMapper.toDetailedDto(department);
-    }
-
-    @Transactional
-    public DepartmentDto.Response createDepartment(DepartmentDto.Request departmentDto) {
-        // Check if department name already exists
-        if (departmentRepository.existsByDepartmentName(departmentDto.getDepartmentName())) {
-            throw new IllegalArgumentException("Department name already exists: " + departmentDto.getDepartmentName());
-        }
-
-        Department department = departmentMapper.toEntity(departmentDto);
-        return departmentMapper.toDto(departmentRepository.save(department));
+        return departmentMapper.toDetailedResponse(department);
     }
 
     @Transactional
-    public DepartmentDto.Response updateDepartment(Long id, DepartmentDto.Request departmentDto) {
+    public DepartmentResponse createDepartment(DepartmentRequest request) {
+        if (departmentRepository.existsByDepartmentName(request.departmentName())) {
+            throw new IllegalArgumentException("Department name already exists: " + request.departmentName());
+        }
+
+        Department department = departmentMapper.toEntity(request);
+        return departmentMapper.toResponse(departmentRepository.save(department));
+    }
+
+    @Transactional
+    public DepartmentResponse updateDepartment(Long id, DepartmentRequest departmentRequest) {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + id));
 
-        // Check if department name already exists for another department
-        if (!department.getDepartmentName().equals(departmentDto.getDepartmentName()) &&
-                departmentRepository.existsByDepartmentName(departmentDto.getDepartmentName())) {
-            throw new IllegalArgumentException("Department name already exists: " + departmentDto.getDepartmentName());
+        if (!department.getDepartmentName().equals(departmentRequest.departmentName()) &&
+                departmentRepository.existsByDepartmentName(departmentRequest.departmentName())) {
+            throw new IllegalArgumentException("Department name already exists: " + departmentRequest.departmentName());
         }
 
-        department.setDepartmentName(departmentDto.getDepartmentName());
-        department.setDescription(departmentDto.getDescription());
-        department.setDepartmentType(departmentDto.getDepartmentType());
-        department.setResponsibilities(departmentDto.getResponsibilities());
+        department.setDepartmentName(departmentRequest.departmentName());
+        department.setDescription(departmentRequest.description());
+        department.setDepartmentType(departmentRequest.departmentType());
+        department.setResponsibilities(departmentRequest.responsibilities());
 
-        return departmentMapper.toDto(departmentRepository.save(department));
+        return departmentMapper.toResponse(departmentRepository.save(department));
     }
 
     @Transactional

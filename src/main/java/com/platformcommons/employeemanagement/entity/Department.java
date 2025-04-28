@@ -1,8 +1,12 @@
 package com.platformcommons.employeemanagement.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -25,16 +29,20 @@ public class Department {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "department_type", nullable = false)
     private DepartmentType departmentType;
-
-    @Column(nullable = false)
-    private Integer employeeCount = 0;
 
     private String responsibilities;
 
     @ManyToMany(mappedBy = "departments", fetch = FetchType.LAZY)
+    @JsonIgnore
     private Set<Employee> employees = new HashSet<>();
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 
     public enum DepartmentType {
         TECHNICAL, HR, FINANCE, MARKETING, OPERATIONS, CUSTOMER_SUPPORT

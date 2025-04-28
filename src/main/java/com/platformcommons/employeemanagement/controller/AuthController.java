@@ -31,4 +31,5 @@ public class AuthController {
     public ResponseEntity<AuthDto.JwtResponse> authenticateEmployee(@Valid @RequestBody AuthDto.EmployeeLoginRequest loginRequest) {
         return ResponseEntity.ok(authService.authenticateEmployee(loginRequest));
     }
+
 }

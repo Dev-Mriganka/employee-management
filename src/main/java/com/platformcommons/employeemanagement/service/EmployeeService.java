@@ -1,6 +1,9 @@
 package com.platformcommons.employeemanagement.service;
 
-import com.platformcommons.employeemanagement.dto.EmployeeDto;
+import com.platformcommons.employeemanagement.dto.AddressRequest;
+import com.platformcommons.employeemanagement.dto.EmployeeRequest;
+import com.platformcommons.employeemanagement.dto.EmployeeResponse;
+import com.platformcommons.employeemanagement.dto.EmployeeUpdateRequest;
 import com.platformcommons.employeemanagement.entity.Address;
 import com.platformcommons.employeemanagement.entity.Department;
 import com.platformcommons.employeemanagement.entity.Employee;
@@ -28,104 +31,124 @@ public class EmployeeService {
     private final EmployeeMapper employeeMapper;
     private final AddressMapper addressMapper;
 
-    public List<EmployeeDto.Response> getAllEmployees() {
+    public List<EmployeeResponse> getAllEmployees() {
         return employeeRepository.findAll().stream()
-                .map(employeeMapper::toDto)
+                .map(employeeMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-    public EmployeeDto.Response getEmployeeById(Long id) {
-        Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
-        return employeeMapper.toDto(employee);
+    public EmployeeResponse getEmployeeById(Long id) {
+        Employee employee = getEmployeeOrThrow(id);
+        return employeeMapper.toResponse(employee);
     }
 
-    public EmployeeDto.Response getEmployeeByCode(String employeeCode) {
+    public EmployeeResponse getEmployeeByCode(String employeeCode) {
         Employee employee = employeeRepository.findByEmployeeCode(employeeCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with code: " + employeeCode));
-        return employeeMapper.toDto(employee);
+        return employeeMapper.toResponse(employee);
     }
 
-    public List<EmployeeDto.Response> searchEmployeesByName(String name) {
+    public List<EmployeeResponse> searchEmployeesByName(String name) {
         return employeeRepository.findByNameContainingIgnoreCase(name).stream()
-                .map(employeeMapper::toDto)
+                .map(employeeMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-    public List<EmployeeDto.Response> getEmployeesByDepartment(Long departmentId) {
+    public List<EmployeeResponse> getEmployeesByDepartment(Long departmentId) {
         return employeeRepository.findByDepartmentId(departmentId).stream()
-                .map(employeeMapper::toDto)
+                .map(employeeMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public EmployeeDto.Response createEmployee(EmployeeDto.Request employeeDto) {
+    public EmployeeResponse createEmployee(EmployeeRequest employeeRequest) {
         // Check if employee code already exists
-        if (employeeRepository.existsByEmployeeCode(employeeDto.getEmployeeCode())) {
-            throw new IllegalArgumentException("Employee code already exists: " + employeeDto.getEmployeeCode());
+        if (employeeRepository.existsByEmployeeCode(employeeRequest.employeeCode())) {
+            throw new IllegalArgumentException("Employee code already exists: " + employeeRequest.employeeCode());
         }
 
-        Employee employee = employeeMapper.toEntity(employeeDto);
+        Employee employee = employeeMapper.toEntity(employeeRequest);
 
         // Handle addresses
-        Set<Address> addresses = new HashSet<>();
-        employeeDto.getAddresses().forEach(addressDto -> {
-            Address address = addressMapper.toEntity(addressDto);
-            address.setEmployee(employee);
-            addresses.add(address);
-        });
-        employee.setAddresses(addresses);
-
-        return employeeMapper.toDto(employeeRepository.save(employee));
-    }
-
-    @Transactional
-    public EmployeeDto.Response updateEmployee(Long id, EmployeeDto.UpdateRequest updateDto) {
-        Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
-
-        employeeMapper.updateEmployeeFromDto(updateDto, employee);
-
-        // Update addresses
-        if (updateDto.getAddresses() != null && !updateDto.getAddresses().isEmpty()) {
-            // Remove existing addresses
-            employee.getAddresses().clear();
-
-            // Add new addresses
-            updateDto.getAddresses().forEach(addressDto -> {
-                Address address = addressMapper.toEntity(addressDto);
-                address.setEmployee(employee);
-                employee.getAddresses().add(address);
-            });
+        if (employeeRequest.addresses() == null || employeeRequest.addresses().isEmpty()) {
+            employee.setAddresses(new HashSet<>());
+        } else {
+            employee.setAddresses(employeeRequest.addresses().stream()
+                    .map(addressMapper::toEntity)
+                    .peek(employee::addAddress)
+                    .collect(Collectors.toSet()));
         }
 
-        return employeeMapper.toDto(employeeRepository.save(employee));
+        return employeeMapper.toResponse(employeeRepository.save(employee));
     }
 
     @Transactional
-    public EmployeeDto.Response assignDepartment(Long employeeId, Long departmentId) {
-        Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + employeeId));
+    public EmployeeResponse updateEmployee(Long id, EmployeeUpdateRequest updateRequest) {
+        Employee employee = getEmployeeOrThrow(id);
+
+        employeeMapper.updateFromRequest(updateRequest, employee);
+        return employeeMapper.toResponse(employeeRepository.save(employee));
+    }
+
+    @Transactional
+    public EmployeeResponse addAddress(Long employeeId, AddressRequest request) {
+        Employee employee = getEmployeeOrThrow(employeeId);
+        Address address = addressMapper.toEntity(request);
+        employee.addAddress(address); // Uses your bidirectional helper
+        return employeeMapper.toResponse(employeeRepository.save(employee));
+    }
+
+    @Transactional
+    public EmployeeResponse updateAddress(Long employeeId, Long addressId, AddressRequest request) {
+        Employee employee = getEmployeeOrThrow(employeeId);
+        Address address = employee.getAddresses().stream()
+                .filter(a -> a.getId().equals(addressId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Address not found"));
+
+        addressMapper.updateFromRequest(request, address);
+        return employeeMapper.toResponse(employeeRepository.save(employee));
+    }
+
+    @Transactional
+    public EmployeeResponse removeAddress(Long employeeId, Long addressId) {
+        Employee employee = getEmployeeOrThrow(employeeId);
+        Address address = employee.getAddresses().stream()
+                .filter(a -> a.getId().equals(addressId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Address not found"));
+
+        employee.removeAddress(address); // Uses your bidirectional helper
+        return employeeMapper.toResponse(employeeRepository.save(employee));
+    }
+
+    private Employee getEmployeeOrThrow(Long id) {
+        return employeeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
+    }
+
+    @Transactional
+    public EmployeeResponse assignDepartment(Long employeeId, Long departmentId) {
+        Employee employee = getEmployeeOrThrow(employeeId);
 
         Department department = departmentRepository.findById(departmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + departmentId));
 
         employee.addDepartment(department);
 
-        return employeeMapper.toDto(employeeRepository.save(employee));
+        return employeeMapper.toResponse(employeeRepository.save(employee));
     }
 
     @Transactional
-    public EmployeeDto.Response removeDepartment(Long employeeId, Long departmentId) {
-        Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + employeeId));
+    public EmployeeResponse removeDepartment(Long employeeId, Long departmentId) {
+        Employee employee = getEmployeeOrThrow(employeeId);
 
         Department department = departmentRepository.findById(departmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + departmentId));
 
         employee.removeDepartment(department);
 
-        return employeeMapper.toDto(employeeRepository.save(employee));
+        return employeeMapper.toResponse(employeeRepository.save(employee));
     }
 
     @Transactional

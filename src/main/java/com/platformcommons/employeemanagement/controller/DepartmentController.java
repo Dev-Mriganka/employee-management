@@ -1,6 +1,8 @@
 package com.platformcommons.employeemanagement.controller;
 
-import com.platformcommons.employeemanagement.dto.DepartmentDto;
+import com.platformcommons.employeemanagement.dto.DepartmentDetailedResponse;
+import com.platformcommons.employeemanagement.dto.DepartmentRequest;
+import com.platformcommons.employeemanagement.dto.DepartmentResponse;
 import com.platformcommons.employeemanagement.service.DepartmentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -26,36 +28,36 @@ public class DepartmentController {
     @GetMapping
     @Operation(summary = "Get all departments", description = "Retrieves all departments")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EMPLOYEE')")
-    public ResponseEntity<List<DepartmentDto.Response>> getAllDepartments() {
+    public ResponseEntity<List<DepartmentResponse>> getAllDepartments() {
         return ResponseEntity.ok(departmentService.getAllDepartments());
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get department by ID", description = "Retrieves department by ID")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EMPLOYEE')")
-    public ResponseEntity<DepartmentDto.Response> getDepartmentById(@PathVariable Long id) {
+    public ResponseEntity<DepartmentResponse> getDepartmentById(@PathVariable Long id) {
         return ResponseEntity.ok(departmentService.getDepartmentById(id));
     }
 
     @GetMapping("/{id}/employees")
     @Operation(summary = "Get department with employees", description = "Retrieves department with all assigned employees")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<DepartmentDto.DetailedResponse> getDepartmentWithEmployees(@PathVariable Long id) {
+    public ResponseEntity<DepartmentDetailedResponse> getDepartmentWithEmployees(@PathVariable Long id) {
         return ResponseEntity.ok(departmentService.getDepartmentWithEmployees(id));
     }
 
     @PostMapping
     @Operation(summary = "Create department", description = "Creates a new department")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<DepartmentDto.Response> createDepartment(@Valid @RequestBody DepartmentDto.Request departmentDto) {
+    public ResponseEntity<DepartmentResponse> createDepartment(@Valid @RequestBody DepartmentRequest departmentDto) {
         return new ResponseEntity<>(departmentService.createDepartment(departmentDto), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Update department", description = "Updates an existing department")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<DepartmentDto.Response> updateDepartment(@PathVariable Long id,
-                                                                   @Valid @RequestBody DepartmentDto.Request departmentDto) {
+    public ResponseEntity<DepartmentResponse> updateDepartment(@PathVariable Long id,
+                                                                   @Valid @RequestBody DepartmentRequest departmentDto) {
         return ResponseEntity.ok(departmentService.updateDepartment(id, departmentDto));
     }
 
